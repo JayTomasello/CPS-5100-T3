@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Transaction Page</title>
+</head>
+<body>
+    <h1>Transaction Page</h1>
+    <p>Transaction for favor: "{{ favor.title }}"</p>
+    <p>Amount to be paid: ${{ favor.monetary_value }}</p>
+    <p>Pay to: {{ requester.name }}</p>
+    
+    <form action="/confirm_digital_payment/{{ favor._id }}" method="POST">
+        <button type="submit">Confirm Digital Payment</button>
+    </form>
+
+    <!-- Link to return to the favor detail page -->
+    <p><a href="/favor_detail/{{ favor._id }}">Return to Favor Details</a></p>
+
+    <script>
+        document.forms[0].onsubmit = async function(e) {
+            e.preventDefault();
+            const response = await fetch(this.action, { method: this.method });
+            const data = await response.json();
+            alert(data.message);
+            if (data.status === 'success') {
+                window.location.href = '/favor_detail/{{ favor._id }}'; // Redirect back to favor detail after payment
+            } else {
+                alert('Failed to confirm payment: ' + data.message);
+            }
+        };
+    </script>
+</body>
+</html>

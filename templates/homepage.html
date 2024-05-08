@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home Page</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+    <h1>Welcome to the Homepage</h1>
+    <button id="logoutButton">Logout</button>
+
+    <div>
+        <h2>Create a Favor</h2>
+        <button id="toggleCreateFavorFormButton">Create New Favor</button>
+        <div id="createFavorForm" style="display:none;">
+            <form id="favorForm">
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="title" required><br>
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" required></textarea><br>
+                <label for="monetary_value">Monetary Value:</label>
+                <input type="number" id="monetary_value" name="monetary_value" min="0" required><br>
+                <label for="deadline">Deadline:</label>
+                <input type="datetime-local" id="deadline" name="deadline" min="{{ now }}" required><br>
+                <label for="category">Category:</label>
+                <select id="category" name="category" required>
+                    <option value="Transport">Transport</option>
+                    <option value="Errand">Errand</option>
+                    <option value="Academic">Academic</option>
+                    <option value="Other">Other</option>
+                </select><br>
+                <label for="pick_up_location">Pick-up Location:</label>
+                <select id="pick_up_location" name="pick_up_location">
+                    <option value="GLAB 419">GLAB 419</option>
+                    <option value="GLAB 420">GLAB 420</option>
+                    <option value="GLAB 421">GLAB 421</option>
+                </select><br>
+                <label for="drop_off_location">Drop-off Location:</label>
+                <select id="drop_off_location" name="drop_off_location">
+                    <option value="GLAB 419">GLAB 419</option>
+                    <option value="GLAB 420">GLAB 420</option>
+                    <option value="GLAB 421">GLAB 421</option>
+                </select><br>
+                <label for="payment_type">Payment Type:</label>
+                <input type="radio" id="physical" name="payment_type" value="Physical" checked> Physical
+                <input type="radio" id="digital" name="payment_type" value="Digital"> Digital<br>
+                <button type="submit">Submit Favor</button>
+            </form>
+            <div id="successMessage" style="display:none; color:green;">Favor created successfully!</div>
+        </div>
+    </div>
+
+    <div>
+        <h2>Favors</h2>
+        <button onclick="fetchAndUpdateFavors('all')">All Favors</button>
+        <button onclick="fetchAndUpdateFavors('complete')">Complete Favors</button>
+        <button onclick="fetchAndUpdateFavors('incomplete')">Incomplete Favors</button>
+        <button onclick="fetchAndUpdateFavors('created')">My Created Favors</button>
+        <div>
+            <label for="filterCategory">Filter by Category:</label>
+            <select id="filterCategory">
+                <option value="">All</option>
+                <option value="Transport">Transport</option>
+                <option value="Errand">Errand</option>
+                <option value="Academic">Academic</option>
+                <!-- Add more categories as needed -->
+            </select>
+            <label for="filterValue">Filter by Minimum Monetary Value:</label>
+            <input type="number" id="filterValue" min="0"><br>
+            <button id="applyFiltersButton" onclick="applyAdditionalFilters()">Apply Filters</button>
+        </div>
+        <div id="favorsList">
+            <!-- Favors will be listed here -->
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('logoutButton').addEventListener('click', function() {
+            window.location.href = '/logout';
+        });
+
+        document.getElementById('toggleCreateFavorFormButton').addEventListener('click', function() {
+            var form = document.getElementById('createFavorForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        });
+
+        document.getElementById('favorForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var formData = {
+                'title': document.getElementById('title').value,
+                'description': document.getElementById('description').value,
+                'monetary_value': document.getElementById('monetary_value').value,
+                'deadline': document.getElementById('deadline').value,
+                'category': document.getElementById('category').value,
+                'pick_up_location': document.getElementById('pick_up_location').value,
+                'drop_off_location': document.getElementById('drop_off_location').value,
+                'payment_type': document.querySelector('input[name="payment_type"]:checked').value
+            };
+            fetch('/create_favor', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                document.getElementById('successMessage').style.display = 'block';
+                document.getElementById('favorForm').reset();
+                fetchAndUpdateFavors('all'); // Fetch and update favors list after creating a new one
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        });
+
+        function fetchAndUpdateFavors(filter = 'all') {
+            fetch(`/get_favors/${filter}`)
+            .then(response => response.json())
+            .then(favors => {
+                displayFavors(favors);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function displayFavors(favors) {
+            var favorsListDiv = document.getElementById('favorsList');
+            favorsListDiv.innerHTML = ''; // Clear existing favors
+            favors.forEach(function(favor) {
+                var favorDiv = document.createElement('div');
+                favorDiv.innerHTML = `<h3>${favor.title}</h3>
+                                      <p>${favor.description}</p>
+                                      <p>Monetary Value: ${favor.monetary_value}</p>
+                                      <p>Deadline: ${favor.deadline}</p>
+                                      <p>Category: ${favor.category}</p>
+                                      <p>Pick-up Location: ${favor.pick_up_location}</p>
+                                      <p>Drop-off Location: ${favor.drop_off_location}</p>
+                                      <button onclick="viewFavorDetail('${favor._id}')">View Details</button>`;
+                favorsListDiv.appendChild(favorDiv);
+            });
+        }
+
+        function applyAdditionalFilters() {
+            var category = document.getElementById('filterCategory').value || "";
+            var monetaryValue = document.getElementById('filterValue').value || 0;
+            var filterData = { category, monetaryValue };
+
+            fetch('/custom_filters', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(filterData)
+            })
+            .then(response => response.json())
+            .then(favors => {
+                displayFavors(favors);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function viewFavorDetail(favorId) {
+            window.location.href = `/favor_detail/${favorId}`;
+        }
+
+        $(document).ready(function() {
+            fetchAndUpdateFavors('all'); // Ensure initial data load on page ready
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dispute Management</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+    <h1>Dispute Management Dashboard</h1>
+    <div id="disputeList">
+        {% for dispute in disputes %}
+            <div>
+                <strong>Title:</strong> {{ dispute.title }}<br>
+                <strong>Description:</strong> {{ dispute.description }}<br>
+                <strong>Category:</strong> {{ dispute.category }}<br>
+                <strong>Status:</strong> {{ dispute.status }}<br>
+                <button onclick="resolveDispute('{{ dispute._id }}')">Resolve Dispute</button>
+                <hr>
+            </div>
+        {% endfor %}
+    </div>
+    <div>
+        <a href="{{ url_for('logout.logout') }}"><button>Logout</button></a>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchDisputes();
+        });
+
+        function fetchDisputes() {
+            fetch('/api/disputes')
+            .then(response => response.json())
+            .then(data => {
+                const disputes = data;
+                const disputeList = document.getElementById('disputeList');
+                disputeList.innerHTML = '';
+                disputes.forEach(dispute => {
+                    const favorItem = document.createElement('div');
+                    favorItem.innerHTML = `
+                        <strong>Title:</strong> ${dispute.title}<br>
+                        <strong>Description:</strong> ${dispute.description}<br>
+                        <strong>Category:</strong> ${dispute.category}<br>
+                        <strong>Status:</strong> ${dispute.status}<br>
+                        <button onclick="resolveDispute('${dispute._id}')">Resolve Dispute</button>
+                        <hr>
+                    `;
+                    disputeList.appendChild(favorItem);
+                });
+            })
+            .catch(error => console.error('Error fetching disputes:', error));
+        }
+
+        function resolveDispute(favorId) {
+            fetch(`/api/resolve_dispute/${favorId}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                fetchDisputes(); // Refresh the list
+            })
+            .catch(error => console.error('Error resolving dispute:', error));
+        }
+    </script>
+</body>
+</html>

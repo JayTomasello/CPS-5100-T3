@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Confirmation</title>
+</head>
+<body>
+    <h1>Payment Confirmation</h1>
+    <p>Please confirm that the payment for the favor titled "{{ favor.title }}" has been received:</p>
+    
+    <form action="/confirm_payment/{{ favor._id }}" method="POST">
+        <button type="submit">Confirm Payment</button>
+    </form>
+
+    <!-- Link to return to the favor detail page -->
+    <p><a href="/favor_detail/{{ favor._id }}">Return to Favor Details</a></p>
+
+    <script>
+        document.forms[0].onsubmit = async function(e) {
+            e.preventDefault();
+            const response = await fetch(this.action, { method: this.method });
+            const data = await response.json();
+            alert(data.message);
+            if (data.status === 'success') {
+                window.location.href = '/favor_detail/{{ favor._id }}'; // Redirect back to favor detail after confirmation
+            } else {
+                alert('Failed to confirm payment: ' + data.message);
+            }
+        };
+    </script>
+</body>
+</html>
